@@ -7,7 +7,7 @@ const readline = require("readline-sync")
 const jwt = require("jsonwebtoken")
 
 
-
+// with knex database connection
 const knex = require('knex')({
     client : "mysql",
     connection : ({
@@ -18,6 +18,8 @@ const knex = require('knex')({
     })
 })
 
+
+// knex use for create a table 
 knex.schema.hasTable("loginsignTB").then((existe) => {
     if(!existe){
         return knex.schema.createTable("loginsignTB",(t) =>{
@@ -29,7 +31,7 @@ knex.schema.hasTable("loginsignTB").then((existe) => {
     }
 })
 
-
+//sign up api to sign 
 app.post("/signup",(req,res) => {
     knex.select("email").from("loginsignTB").where("email", req.body.email)
     .then((data) => {
@@ -65,7 +67,7 @@ app.post("/signup",(req,res) => {
     })
 })
 
-
+// login api to login 
 app.post("/login",(req,res) => {
     var a = false
     var email = req.body.email
@@ -75,14 +77,15 @@ app.post("/login",(req,res) => {
         for(i of data){
             if(i.email == email && i.password == password){
                 a = true
-                const token = jwt.sign({email : i["email"],password : i["password"]},"nehaloginsignup")
-                // res.send({Token : token})
-                res.send("login done")
+                // const token = jwt.sign({email : i["email"],password : i["password"]},"nehaloginsignup")
+                const token = jwt.sign({"email": email,"password" : password},"nehaloginsignup")
+                res.send({Token : token})
             }
         }
         if(a){
             console.log("login done")
         }else{
+            res.send("invalid details....")
             console.log("invalid details....")
         }
     })
@@ -93,7 +96,36 @@ app.post("/login",(req,res) => {
     
 })
 
-console.log("next task....")
+
+// api for take to token
+app.get("/getToken",verifyToken,(req,res) => {
+    jwt.verify(req.Token,"nehaloginsignup",(err,authData) => {
+        if(err){
+            console.log(err)
+        }else{
+            console.log("Successfully Login Done")
+            res.send({
+                verifyData : authData
+            });
+        };
+    });
+});
+
+
+//function for verify the token
+function verifyToken(req,res,next){
+    const bearerHeader = req.headers["authorization"]
+    if(bearerHeader !== 'undefined'){
+        const bearer = bearerHeader.split(' ')
+        const bearerToken = bearer[1]
+        req.Token = bearerToken 
+        next()
+    }else{
+        res.sendStatus(403)
+    }
+
+}
+
 
 
 app.listen(PORT,() => {
